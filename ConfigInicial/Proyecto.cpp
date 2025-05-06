@@ -1,4 +1,12 @@
-﻿#include <string>
+﻿/*
+* Proyecto final laboratorio de computación gráfica
+* Entrega el 05/05/2025
+* Integrantes:
+* - Alejandro 422066992
+* - Alberto 313113439
+* - Fernando 318273745
+*/
+#include <string>
 #include <vector>
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
