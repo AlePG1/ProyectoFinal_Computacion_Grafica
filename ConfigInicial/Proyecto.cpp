@@ -123,7 +123,194 @@ Keyframe GetCurrentKeyframe(const ComputerComponent& component, float currentTim
     }
     return component.keyframes.back();
 }
+/*********************/
+//-----------------------ANIMACION BOY-------------------------------
+bool animBoy = false;
+glm::vec3 boyPos(-12.768f, 0.913f, -8.331f); // posición inicial del boy  
 
+// Partes del cuerpo
+float cuerpoBoy = 0.0f;
+float pantIzq = 0.0f;
+float pantDer = 0.0f;
+float piernaIzq = 0.0f;
+float piernaDer = 0.0f;
+float brazoDer = 0.0f;
+float brazoIzq = 0.0f;
+float bicepDer = 0.0f;
+float bicepIzq = 0.0f;
+
+// Patineta
+float skate = 0.0f;
+float sktPosX = -12.788f;
+float sktPosY = 0.118f;
+float sktPosZ = -7.11f;
+
+bool stepBoy = false;
+float rotBoy = 0.0f;
+
+// Variables para KeyFrames
+float boyPosX = -12.768f;
+float boyPosY = 0.913f;
+float boyPosZ = -8.331f;
+
+#define MAX_FRAMES_BOY 50
+int i_max_steps = 190;
+int i_curr_steps_boy = 0;
+
+typedef struct _frameBoy {
+    float incX, incY, incZ;
+    float boyPosX, boyPosY, boyPosZ;
+    float sktPosX, sktPosY, sktPosZ;
+    float rotBoy, rotBoyInc;
+    float cuerpoBoy, cuerpoBoyInc;
+    float pantIzq, pantIzqInc;
+    float pantDer, pantDerInc;
+    float piernaDer, piernaDerInc;
+    float piernaIzq, piernaIzqInc;
+    float brazoDer, brazoDerInc;
+    float brazoIzq, brazoIzqInc;
+    float bicepDer, bicepDerInc;
+    float bicepIzq, bicepIzqInc;
+} FRAME_BOY;
+
+FRAME_BOY KeyFrameBoy[MAX_FRAMES_BOY];
+int FrameIndexBoy = 0;
+int playIndexBoy = 0;
+bool playBoy = false;
+
+void saveFrameBoy() {
+    if (FrameIndexBoy >= MAX_FRAMES_BOY) return;
+
+    KeyFrameBoy[FrameIndexBoy].boyPosX = boyPosX;
+    KeyFrameBoy[FrameIndexBoy].boyPosY = boyPosY;
+    KeyFrameBoy[FrameIndexBoy].boyPosZ = boyPosZ;
+
+    KeyFrameBoy[FrameIndexBoy].sktPosX = sktPosX;
+    KeyFrameBoy[FrameIndexBoy].sktPosY = sktPosY;
+    KeyFrameBoy[FrameIndexBoy].sktPosZ = sktPosZ;
+
+    KeyFrameBoy[FrameIndexBoy].rotBoy = rotBoy;
+    KeyFrameBoy[FrameIndexBoy].cuerpoBoy = cuerpoBoy;
+    KeyFrameBoy[FrameIndexBoy].pantDer = pantDer;
+    KeyFrameBoy[FrameIndexBoy].pantIzq = pantIzq;
+    KeyFrameBoy[FrameIndexBoy].piernaDer = piernaDer;
+    KeyFrameBoy[FrameIndexBoy].piernaIzq = piernaIzq;
+    KeyFrameBoy[FrameIndexBoy].brazoDer = brazoDer;
+    KeyFrameBoy[FrameIndexBoy].brazoIzq = brazoIzq;
+    KeyFrameBoy[FrameIndexBoy].bicepDer = bicepDer;
+    KeyFrameBoy[FrameIndexBoy].bicepIzq = bicepIzq;
+
+    FrameIndexBoy++;
+}
+
+void resetElementsBoy() {
+    boyPosX = KeyFrameBoy[0].boyPosX;
+    boyPosY = KeyFrameBoy[0].boyPosY;
+    boyPosZ = KeyFrameBoy[0].boyPosZ;
+
+    sktPosX = KeyFrameBoy[0].sktPosX;
+    sktPosY = KeyFrameBoy[0].sktPosY;
+    sktPosZ = KeyFrameBoy[0].sktPosZ;
+
+    rotBoy = KeyFrameBoy[0].rotBoy;
+    cuerpoBoy = KeyFrameBoy[0].cuerpoBoy;
+    pantDer = KeyFrameBoy[0].pantDer;
+    pantIzq = KeyFrameBoy[0].pantIzq;
+    piernaIzq = KeyFrameBoy[0].piernaIzq;
+    piernaDer = KeyFrameBoy[0].piernaDer;
+    brazoIzq = KeyFrameBoy[0].brazoIzq;
+    brazoDer = KeyFrameBoy[0].brazoDer;
+    bicepIzq = KeyFrameBoy[0].bicepIzq;
+    bicepDer = KeyFrameBoy[0].bicepDer;
+}
+
+void interpolationBoy() {
+    if (playIndexBoy >= FrameIndexBoy - 1) return;
+
+    KeyFrameBoy[playIndexBoy].incX = (KeyFrameBoy[playIndexBoy + 1].boyPosX - KeyFrameBoy[playIndexBoy].boyPosX) / i_max_steps;
+    KeyFrameBoy[playIndexBoy].incY = (KeyFrameBoy[playIndexBoy + 1].boyPosY - KeyFrameBoy[playIndexBoy].boyPosY) / i_max_steps;
+    KeyFrameBoy[playIndexBoy].incZ = (KeyFrameBoy[playIndexBoy + 1].boyPosZ - KeyFrameBoy[playIndexBoy].boyPosZ) / i_max_steps;
+
+    KeyFrameBoy[playIndexBoy].incX = (KeyFrameBoy[playIndexBoy + 1].sktPosX - KeyFrameBoy[playIndexBoy].sktPosX) / i_max_steps;
+    KeyFrameBoy[playIndexBoy].incY = (KeyFrameBoy[playIndexBoy + 1].sktPosY - KeyFrameBoy[playIndexBoy].sktPosY) / i_max_steps;
+    KeyFrameBoy[playIndexBoy].incZ = (KeyFrameBoy[playIndexBoy + 1].sktPosZ - KeyFrameBoy[playIndexBoy].sktPosZ) / i_max_steps;
+
+    KeyFrameBoy[playIndexBoy].rotBoyInc = (KeyFrameBoy[playIndexBoy + 1].rotBoy - KeyFrameBoy[playIndexBoy].rotBoy) / i_max_steps;
+    KeyFrameBoy[playIndexBoy].cuerpoBoyInc = (KeyFrameBoy[playIndexBoy + 1].cuerpoBoy - KeyFrameBoy[playIndexBoy].cuerpoBoy) / i_max_steps;
+    KeyFrameBoy[playIndexBoy].pantDerInc = (KeyFrameBoy[playIndexBoy + 1].pantDer - KeyFrameBoy[playIndexBoy].pantDer) / i_max_steps;
+    KeyFrameBoy[playIndexBoy].pantIzqInc = (KeyFrameBoy[playIndexBoy + 1].pantIzq - KeyFrameBoy[playIndexBoy].pantIzq) / i_max_steps;
+    KeyFrameBoy[playIndexBoy].piernaDerInc = (KeyFrameBoy[playIndexBoy + 1].piernaDer - KeyFrameBoy[playIndexBoy].piernaDer) / i_max_steps;
+    KeyFrameBoy[playIndexBoy].piernaIzqInc = (KeyFrameBoy[playIndexBoy + 1].piernaIzq - KeyFrameBoy[playIndexBoy].piernaIzq) / i_max_steps;
+    KeyFrameBoy[playIndexBoy].brazoDerInc = (KeyFrameBoy[playIndexBoy + 1].brazoDer - KeyFrameBoy[playIndexBoy].brazoDer) / i_max_steps;
+    KeyFrameBoy[playIndexBoy].brazoIzqInc = (KeyFrameBoy[playIndexBoy + 1].brazoIzq - KeyFrameBoy[playIndexBoy].brazoIzq) / i_max_steps;
+    KeyFrameBoy[playIndexBoy].bicepDerInc = (KeyFrameBoy[playIndexBoy + 1].bicepDer - KeyFrameBoy[playIndexBoy].bicepDer) / i_max_steps;
+    KeyFrameBoy[playIndexBoy].bicepIzqInc = (KeyFrameBoy[playIndexBoy + 1].bicepIzq - KeyFrameBoy[playIndexBoy].bicepIzq) / i_max_steps;
+}
+
+void setupBoyWalkAnimation() {
+    // Resetear posición y animaciones
+    FrameIndexBoy = 0;
+    boyPosX = -12.768f;
+    boyPosY = 0.913f;
+    boyPosZ = -8.331f;
+    sktPosX = -12.788f;
+    sktPosY = 0.118f;
+    sktPosZ = -7.11f;
+
+    // Resetear todas las partes del cuerpo
+    piernaIzq = 0.0f;
+    piernaDer = 0.0f;
+    pantIzq = 0.0f;
+    pantDer = 0.0f;
+    brazoIzq = 0.0f;
+    brazoDer = 0.0f;
+    bicepIzq = 0.0f;
+    bicepDer = 0.0f;
+
+    // Crear 20 keyframes para 10 pasos (2 keyframes por paso)
+    for (int i = 0; i < 20; i++) {
+        // Avanzar posición en Z cada 2 keyframes (un paso completo)
+        if (i % 2 == 0) {
+            boyPosZ += 0.1f; // Cada paso avanza 0.1 unidades en Z
+            sktPosZ += 0.1f; // También mover la patineta
+        }
+
+        // Alternar movimiento de piernas
+        if (i % 2 == 0) {
+            // Pierna derecha hacia adelante, izquierda atrás
+            piernaDer = -15.0f;
+            piernaIzq = 15.0f;
+            pantDer = 15.0f;
+            pantIzq = -15.0f;
+
+            // Brazos opuestos a piernas
+            brazoIzq = -20.0f;
+            brazoDer = 20.0f;
+        }
+        else {
+            // Pierna izquierda hacia adelante, derecha atrás
+            piernaDer = 15.0f;
+            piernaIzq = -15.0f;
+            pantDer = -15.0f;
+            pantIzq = 15.0f;
+
+            // Brazos opuestos
+            brazoIzq = 20.0f;
+            brazoDer = -20.0f;
+        }
+
+        // Guardar el keyframe
+        saveFrameBoy();
+    }
+
+    // Configurar para reproducir la animación
+    resetElementsBoy();
+    interpolationBoy();
+    playBoy = true;
+    playIndexBoy = 0;
+    i_curr_steps_boy = 0;
+}
+/********************/
 
 // Función para actualizar animaciones en secuencia
 void UpdateAnimations(float currentTime) {
@@ -368,6 +555,18 @@ int main() {
     Model aireact((char*)"Models/Proyecto/AirOld/AireViejo.obj");
     Model airenew((char*)"Models/Proyecto/AirNew/AireNuevo.obj");
     Model pantalla((char*)"Models/Proyecto/Samsung8K/Pantalla.obj");
+
+    // Cargar modelos del niño
+    Model bicepD((char*)"Models/boy/bicepDER.obj");
+    Model bicepI((char*)"Models/boy/bicepIZQ.obj");
+    Model brazoD((char*)"Models/boy/brazoDER.obj");
+    Model brazoI((char*)"Models/boy/brazoIZQ.obj");
+    Model piernaD((char*)"Models/boy/piernaDER.obj");
+    Model piernaI((char*)"Models/boy/piernaIZQ.obj");
+    Model pantD((char*)"Models/boy/pantDER.obj");
+    Model pantI((char*)"Models/boy/pantIZQ.obj");
+    Model body((char*)"Models/boy/cuerpo.obj");
+    Model skate((char*)"Models/boy/ball.obj");
 
     // Configurar puestos de trabajo
     std::vector<Workstation> workstations = {
@@ -780,11 +979,74 @@ int main() {
         glm::mat4 nave(1);
         glm::mat4 aire(1);
         glm::mat4 proyectorview(1);
-        
+
         // Renderizar ventanas
         for (const auto& wi : windows) {
             RenderInstance(shader, ventanas, wi);
         }
+
+        // Dibujar el niño
+        glm::mat4 modelBoy(1);
+        glm::mat4 modelTemp = modelBoy = glm::translate(modelBoy, glm::vec3(boyPosX, boyPosY, boyPosZ));
+        modelTemp = modelBoy = glm::rotate(modelBoy, glm::radians(rotBoy), glm::vec3(0.0f, 0.0f, 1.0f));
+        glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(modelBoy));
+        body.Draw(shader);
+
+        // Bíceps Izquierdo 
+        glm::mat4 modelBicepIzq = modelTemp;
+        modelBicepIzq = glm::translate(modelBicepIzq, glm::vec3(-12.634f + 12.768f, 1.006f - 0.913f, -8.383f + 8.352f));
+        modelBicepIzq = glm::rotate(modelBicepIzq, glm::radians(bicepIzq), glm::vec3(1.0f, 0.0f, 0.0f));
+        glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(modelBicepIzq));
+        bicepI.Draw(shader);
+
+        // Brazo Izquierdo
+        glm::mat4 modelBrazoIzq = modelBicepIzq;
+        modelBrazoIzq = glm::translate(modelBrazoIzq, glm::vec3(-12.591f + 12.634, 0.844f - 1.006f, -8.389f + 8.383f));
+        modelBrazoIzq = glm::rotate(modelBrazoIzq, glm::radians(brazoIzq), glm::vec3(1.0f, 0.0f, 0.0f));
+        glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(modelBrazoIzq));
+        brazoI.Draw(shader);
+
+        // Bíceps Derecho
+        glm::mat4 modelBicepDer = modelTemp;
+        modelBicepDer = glm::translate(modelBicepDer, glm::vec3(-12.88f + 12.768f, 1.006f - 0.913f, -8.383f + 8.352f));
+        modelBicepDer = glm::rotate(modelBicepDer, glm::radians(bicepDer), glm::vec3(1.0f, 0.0f, 0.0f));
+        glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(modelBicepDer));
+        bicepD.Draw(shader);
+
+        // Brazo Derecho
+        glm::mat4 modelBrazoDer = modelBicepDer;
+        modelBrazoDer = glm::translate(modelBrazoDer, glm::vec3(-12.946f + 12.88, 0.859f - 1.006f, -8.408f + 8.383f));
+        modelBrazoDer = glm::rotate(modelBrazoDer, glm::radians(brazoDer), glm::vec3(1.0f, 0.0f, 0.0f));
+        glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(modelBrazoDer));
+        brazoD.Draw(shader);
+
+        // Pierna Izquierda
+        glm::mat4 modelPiernaIzq = modelTemp;
+        modelPiernaIzq = glm::translate(modelPiernaIzq, glm::vec3(-12.691f + 12.768f, 0.595f - 0.913f, -8.352f + 8.352f));
+        modelPiernaIzq = glm::rotate(modelPiernaIzq, glm::radians(piernaIzq), glm::vec3(1.0f, 0.0f, 0.0f));
+        glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(modelPiernaIzq));
+        piernaI.Draw(shader);
+
+        // Pantorrilla Izquierda
+        glm::mat4 modelPantIzq = modelPiernaIzq;
+        modelPantIzq = glm::translate(modelPantIzq, glm::vec3(-12.663f + 12.691f, 0.274f - 0.595f, -8.413f + 8.352f));
+        modelPantIzq = glm::rotate(modelPantIzq, glm::radians(pantIzq), glm::vec3(1.0f, 0.0f, 0.0f));
+        glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(modelPantIzq));
+        pantI.Draw(shader);
+
+        // Pierna Derecha
+        glm::mat4 modelPiernaDer = modelTemp;
+        modelPiernaDer = glm::translate(modelPiernaDer, glm::vec3(-12.827f + 12.768f, 0.592f - 0.913f, -8.348f + 8.352f));
+        modelPiernaDer = glm::rotate(modelPiernaDer, glm::radians(piernaDer), glm::vec3(1.0f, 0.0f, 0.0f));
+        glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(modelPiernaDer));
+        piernaD.Draw(shader);
+
+        // Pantorrilla Derecha
+        glm::mat4 modelPantDer = modelPiernaDer;
+        modelPantDer = glm::translate(modelPantDer, glm::vec3(-12.872f + 12.827f, 0.27f - 0.592f, -8.405f + 8.348f));
+        modelPantDer = glm::rotate(modelPantDer, glm::radians(pantDer), glm::vec3(1.0f, 0.0f, 0.0f));
+        glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(modelPantDer));
+        pantD.Draw(shader);
 
         // Lámpara
         glUniformMatrix4fv(glGetUniformLocation(shader.Program, "model"),
@@ -999,10 +1261,10 @@ int main() {
         }
         // En el bucle de renderizado, modificar la parte donde se renderizan las workstations:
         for (const auto& ws : workstations) {
-        
+
             RenderInstance(shader, cpu, ws.cpu1, true); // Marcar como CPU
             RenderInstance(shader, cpu, ws.cpu2, true); // Marcar como CPU
-           
+
         }
 
         // Also draw the lamp object, again binding the appropriate shader
@@ -1072,18 +1334,18 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mode
 
     }
     if (keys[GLFW_KEY_R] && action == GLFW_PRESS) {
-            // Solo activa animación de ensamblaje (componentes)
-            if (!animationPlaying) {
-                showComputer = true;
-                globalAnimationTime = -1.0f;
-                animationPlaying = true;
-                // Reinicia componentes (no CPUs)
-                for (auto& comp : components) {
-                    comp.isAnimating = false;
-                    comp.hasAnimated = false;
-                }
+        // Solo activa animación de ensamblaje (componentes)
+        if (!animationPlaying) {
+            showComputer = true;
+            globalAnimationTime = -1.0f;
+            animationPlaying = true;
+            // Reinicia componentes (no CPUs)
+            for (auto& comp : components) {
+                comp.isAnimating = false;
+                comp.hasAnimated = false;
             }
         }
+    }
 }
 
 void Animation() {
