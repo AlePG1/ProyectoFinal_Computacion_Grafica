@@ -32,6 +32,14 @@ bool firstMouse = true;
 GLfloat deltaTime = 0.0f;
 GLfloat lastFrame = 0.0f;
 
+// Variables para la animación de reducción gradual
+bool shrinkingWalls = false;  // Bandera para activar la animación
+float wallShrinkProgress = 1.0f;  // Progreso de la escala (1.0 = tamaño completo)
+float wallShrinkStep = 0.02f;  // Paso de reducción por iteración
+float wallShrinkDelay = 0.05f;  // Tiempo entre pasos (segundos)
+float wallShrinkTimer = 0.0f;  // Temporizador para controlar el tiempo
+
+
 bool showComputer = false; // Variable para controlar la visibilidad
 
 // Variables para la animación
@@ -540,7 +548,7 @@ int main() {
         {glm::vec3(16.0f, 12.5f,  34.0f), 90.0f, glm::vec3(4.0f,   20.0f, 7.0f)},   //Pared derecha 2
         {glm::vec3(-42.5f,12.5f,  34.0f), 90.0f, glm::vec3(23.0f,  20.0f, 7.0f)},  //Pared derecha 3
         {glm::vec3(8.5f,  7.0f,   36.0f), 90.0f, glm::vec3(80.2f,  9.2f,  3.0f)},  //Pared derecha 4
-        //{glm::vec3(1.0f,  17.0f, -60.3f),  0.0f, glm::vec3(63.0f,  30.0f,  3.0f)},    //Pared frontal SE COMENTA EL CÓDIGO YA QUE DUPLICA LA PARED
+        {glm::vec3(1.0f,  12.5f, -60.3f),  0.0f, glm::vec3(63.0f,  20.0f,  3.0f)},    //Pared frontal
         {glm::vec3(5.5f,  12.5f,  52.0f),  0.0f, glm::vec3(50.3f,  20.0f,  3.0f)}     //Pared trasera
     };
 
@@ -591,9 +599,6 @@ int main() {
     const glm::mat4 boardTransform = glm::scale(glm::translate(glm::mat4(1.0f),
         glm::vec3(1.0f, 9.0f, -58.0f)),
         glm::vec3(30.0f, 14.0f, 25.0f));
-    const glm::mat4 frontWallTransform = glm::scale(glm::translate(glm::mat4(1.0f),
-        glm::vec3(1.0f, 12.5f, -60.3f)),
-        glm::vec3(63.0f, 20.0f, 3.0f));
 
     while (!glfwWindowShouldClose(window)) {
         GLfloat currentFrame = static_cast<GLfloat>(glfwGetTime());
@@ -619,6 +624,38 @@ int main() {
                 }
             }
             keys[GLFW_KEY_R] = false;
+        }
+
+        //// Tecla para reducir la escala de las paredes
+        std::vector<glm::vec3> originalWallScales;
+        //if (keys[GLFW_KEY_O]) {
+        //    for (auto& wall : walls) {
+        //        wall.scale = glm::vec3(0.0f); // Reducir la escala a 0
+        //    }
+            // Guardar la escala original de las paredes
+        for (const auto& wall : walls) {
+            originalWallScales.push_back(wall.scale);
+        }
+        //}
+
+        if (shrinkingWalls) {
+            wallShrinkTimer += deltaTime;
+
+            if (wallShrinkTimer >= wallShrinkDelay) {
+                wallShrinkProgress -= wallShrinkStep;
+                wallShrinkTimer = 0.0f;
+
+                // Limitar el progreso a 0
+                if (wallShrinkProgress <= 0.0f) {
+                    wallShrinkProgress = 0.0f;
+                    shrinkingWalls = false;  // Detener la animación
+                }
+
+                // Actualizar la escala de las paredes
+                for (size_t i = 0; i < walls.size(); ++i) {
+                    walls[i].scale = glm::mix(originalWallScales[i], glm::vec3(0.0f), 1.0f - wallShrinkProgress);
+                }
+            }
         }
 
         // Actualizar animaciones
@@ -780,7 +817,7 @@ int main() {
         glm::mat4 nave(1);
         glm::mat4 aire(1);
         glm::mat4 proyectorview(1);
-        
+
         // Renderizar ventanas
         for (const auto& wi : windows) {
             RenderInstance(shader, ventanas, wi);
@@ -815,11 +852,6 @@ int main() {
         for (const auto& w : walls) {
             RenderInstance(shader, pared, w);
         }
-
-        // Pared frontal
-        glUniformMatrix4fv(glGetUniformLocation(shader.Program, "model"),
-            1, GL_FALSE, glm::value_ptr(frontWallTransform));
-        pared.Draw(shader);
 
         if (change == false) {
             // Pizarrón
@@ -914,6 +946,9 @@ int main() {
             Rayo.Draw(shader);
         }
 
+
+
+
         //RenderComputer(shader, globalAnimationTime);
         for (const auto& ci : computerInstances) {
             // 1) monta la matriz padre para ESTA instancia
@@ -999,10 +1034,10 @@ int main() {
         }
         // En el bucle de renderizado, modificar la parte donde se renderizan las workstations:
         for (const auto& ws : workstations) {
-        
+
             RenderInstance(shader, cpu, ws.cpu1, true); // Marcar como CPU
             RenderInstance(shader, cpu, ws.cpu2, true); // Marcar como CPU
-           
+
         }
 
         // Also draw the lamp object, again binding the appropriate shader
@@ -1072,18 +1107,27 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mode
 
     }
     if (keys[GLFW_KEY_R] && action == GLFW_PRESS) {
-            // Solo activa animación de ensamblaje (componentes)
-            if (!animationPlaying) {
-                showComputer = true;
-                globalAnimationTime = -1.0f;
-                animationPlaying = true;
-                // Reinicia componentes (no CPUs)
-                for (auto& comp : components) {
-                    comp.isAnimating = false;
-                    comp.hasAnimated = false;
-                }
+        // Solo activa animación de ensamblaje (componentes)
+        if (!animationPlaying) {
+            showComputer = true;
+            globalAnimationTime = -1.0f;
+            animationPlaying = true;
+            // Reinicia componentes (no CPUs)
+            for (auto& comp : components) {
+                comp.isAnimating = false;
+                comp.hasAnimated = false;
             }
         }
+    }
+
+    if (key == GLFW_KEY_O && action == GLFW_PRESS) {
+        if (!shrinkingWalls) {
+            shrinkingWalls = true;
+            wallShrinkProgress = 1.0f;  // Reiniciar el progreso
+            wallShrinkTimer = 0.0f;     // Reiniciar el temporizador
+        }
+    }
+
 }
 
 void Animation() {
@@ -1137,6 +1181,8 @@ void Animation() {
             }
         }
     }
+
+
 }
 
 void MouseCallback(GLFWwindow* window, double xPos, double yPos) {
