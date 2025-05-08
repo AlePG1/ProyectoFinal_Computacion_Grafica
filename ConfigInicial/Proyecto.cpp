@@ -984,16 +984,34 @@ int main() {
         for (const auto& wi : windows) {
             RenderInstance(shader, ventanas, wi);
         }
+        
 
-        // Dibujar el niño
-        glm::mat4 modelBoy(1);
-        glm::mat4 modelTemp = modelBoy = glm::translate(modelBoy, glm::vec3(boyPosX, boyPosY, boyPosZ));
-        modelTemp = modelBoy = glm::rotate(modelBoy, glm::radians(rotBoy), glm::vec3(0.0f, 0.0f, 1.0f));
+        // 1. Define posición y escala global para el niño (variables globales)
+        glm::vec3 boyGlobalPosition(37.0f, 5.0f, 90.0f); // Posición global del personaje
+        glm::vec3 boyGlobalScale(5.0f, 5.0f, 5.0f);    // Escala global del personaje (1.0 = tamaño normal)
+
+        // --- En tu función de renderizado (dentro del bucle principal) ---
+
+        // 2. Matriz de modelo global para mover y escalar todo el personaje
+        glm::mat4 globalModel = glm::mat4(1.0f); // Matriz identidad
+
+        // Orden importante: Primero escala, luego rota, luego traslada (regla mnemotécnica: SRT)
+        globalModel = glm::translate(globalModel, boyGlobalPosition); // Traslación global
+        globalModel = glm::scale(globalModel, boyGlobalScale);        // Escala global
+
+        // 3. Jerarquía del modelo (comienza con la transformación global)
+        glm::mat4 modelBoy = globalModel; // Hereda la transformación global
+        modelBoy = glm::translate(modelBoy, glm::vec3(boyPosX, boyPosY, boyPosZ)); // Posición local
+        modelBoy = glm::rotate(modelBoy, glm::radians(rotBoy), glm::vec3(0.0f, 0.0f, 1.0f)); // Rotación local
+
+        // 4. Dibujar el cuerpo principal (todas las partes heredarán las transformaciones globales)
         glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(modelBoy));
         body.Draw(shader);
 
-        // Bíceps Izquierdo 
-        glm::mat4 modelBicepIzq = modelTemp;
+        // 5. Partes del cuerpo (todas comienzan desde modelBoy que ya incluye transformaciones globales)
+
+        // Bíceps Izquierdo
+        glm::mat4 modelBicepIzq = modelBoy;
         modelBicepIzq = glm::translate(modelBicepIzq, glm::vec3(-12.634f + 12.768f, 1.006f - 0.913f, -8.383f + 8.352f));
         modelBicepIzq = glm::rotate(modelBicepIzq, glm::radians(bicepIzq), glm::vec3(1.0f, 0.0f, 0.0f));
         glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(modelBicepIzq));
@@ -1001,13 +1019,13 @@ int main() {
 
         // Brazo Izquierdo
         glm::mat4 modelBrazoIzq = modelBicepIzq;
-        modelBrazoIzq = glm::translate(modelBrazoIzq, glm::vec3(-12.591f + 12.634, 0.844f - 1.006f, -8.389f + 8.383f));
+        modelBrazoIzq = glm::translate(modelBrazoIzq, glm::vec3(-12.591f + 12.634f, 0.844f - 1.006f, -8.389f + 8.383f));
         modelBrazoIzq = glm::rotate(modelBrazoIzq, glm::radians(brazoIzq), glm::vec3(1.0f, 0.0f, 0.0f));
         glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(modelBrazoIzq));
         brazoI.Draw(shader);
 
         // Bíceps Derecho
-        glm::mat4 modelBicepDer = modelTemp;
+        glm::mat4 modelBicepDer = modelBoy;
         modelBicepDer = glm::translate(modelBicepDer, glm::vec3(-12.88f + 12.768f, 1.006f - 0.913f, -8.383f + 8.352f));
         modelBicepDer = glm::rotate(modelBicepDer, glm::radians(bicepDer), glm::vec3(1.0f, 0.0f, 0.0f));
         glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(modelBicepDer));
@@ -1015,13 +1033,13 @@ int main() {
 
         // Brazo Derecho
         glm::mat4 modelBrazoDer = modelBicepDer;
-        modelBrazoDer = glm::translate(modelBrazoDer, glm::vec3(-12.946f + 12.88, 0.859f - 1.006f, -8.408f + 8.383f));
+        modelBrazoDer = glm::translate(modelBrazoDer, glm::vec3(-12.946f + 12.88f, 0.859f - 1.006f, -8.408f + 8.383f));
         modelBrazoDer = glm::rotate(modelBrazoDer, glm::radians(brazoDer), glm::vec3(1.0f, 0.0f, 0.0f));
         glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(modelBrazoDer));
         brazoD.Draw(shader);
 
         // Pierna Izquierda
-        glm::mat4 modelPiernaIzq = modelTemp;
+        glm::mat4 modelPiernaIzq = modelBoy;
         modelPiernaIzq = glm::translate(modelPiernaIzq, glm::vec3(-12.691f + 12.768f, 0.595f - 0.913f, -8.352f + 8.352f));
         modelPiernaIzq = glm::rotate(modelPiernaIzq, glm::radians(piernaIzq), glm::vec3(1.0f, 0.0f, 0.0f));
         glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(modelPiernaIzq));
@@ -1035,7 +1053,7 @@ int main() {
         pantI.Draw(shader);
 
         // Pierna Derecha
-        glm::mat4 modelPiernaDer = modelTemp;
+        glm::mat4 modelPiernaDer = modelBoy;
         modelPiernaDer = glm::translate(modelPiernaDer, glm::vec3(-12.827f + 12.768f, 0.592f - 0.913f, -8.348f + 8.352f));
         modelPiernaDer = glm::rotate(modelPiernaDer, glm::radians(piernaDer), glm::vec3(1.0f, 0.0f, 0.0f));
         glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(modelPiernaDer));
@@ -1047,6 +1065,7 @@ int main() {
         modelPantDer = glm::rotate(modelPantDer, glm::radians(pantDer), glm::vec3(1.0f, 0.0f, 0.0f));
         glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(modelPantDer));
         pantD.Draw(shader);
+
 
         // Lámpara
         glUniformMatrix4fv(glGetUniformLocation(shader.Program, "model"),
