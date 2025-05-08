@@ -1,12 +1,4 @@
-﻿/*
-* Proyecto final laboratorio de computación gráfica
-* Entrega el 05/05/2025
-* Integrantes:
-* - Alejandro 422066992
-* - Alberto 313113439
-* - Fernando 318273745
-*/
-#include <string>
+﻿#include <string>
 #include <vector>
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
@@ -1068,7 +1060,7 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mode
     }
 
     //Tecla para activar la animación de la nave
-    if (keys[GLFW_KEY_F] && action == GLFW_PRESS)
+    if (keys[GLFW_KEY_N] && action == GLFW_PRESS)
     {
         AnimBall = !AnimBall;
 
