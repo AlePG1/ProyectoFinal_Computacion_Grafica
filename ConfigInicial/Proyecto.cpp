@@ -985,30 +985,42 @@ int main() {
             RenderInstance(shader, ventanas, wi);
         }
         
-
-        // 1. Define posición y escala global para el niño (variables globales)
-        glm::vec3 boyGlobalPosition(37.0f, 5.0f, 90.0f); // Posición global del personaje
+        // 1. Variables globales de transformación
+        glm::vec3 boyGlobalPosition(-90.0f, 4.0f, 10.0f); // Posición global del personaje
         glm::vec3 boyGlobalScale(5.0f, 5.0f, 5.0f);    // Escala global del personaje (1.0 = tamaño normal)
+        float boyGlobalRotation = 180.0f;                  // Ángulo de rotación global
+        glm::vec3 boyGlobalRotationAxis(0.0f, 1.0f, 0.0f); // Eje de rotación (Y por defecto)
 
-        // --- En tu función de renderizado (dentro del bucle principal) ---
+        // Variables locales del modelo
+        float boyPosX = -12.768f;
+        float boyPosY = 0.913f;
+        float boyPosZ = -8.331f;
+        float rotBoy = 0.0f; // Rotación local
 
-        // 2. Matriz de modelo global para mover y escalar todo el personaje
-        glm::mat4 globalModel = glm::mat4(1.0f); // Matriz identidad
+        // Variables de la patineta
+        float sktPosX = -12.788f;
+        float sktPosY = 0.118f;
+        float sktPosZ = -7.11f;
 
-        // Orden importante: Primero escala, luego rota, luego traslada (regla mnemotécnica: SRT)
-        globalModel = glm::translate(globalModel, boyGlobalPosition); // Traslación global
-        globalModel = glm::scale(globalModel, boyGlobalScale);        // Escala global
+        // --- En la función de renderizado ---
 
-        // 3. Jerarquía del modelo (comienza con la transformación global)
-        glm::mat4 modelBoy = globalModel; // Hereda la transformación global
-        modelBoy = glm::translate(modelBoy, glm::vec3(boyPosX, boyPosY, boyPosZ)); // Posición local
-        modelBoy = glm::rotate(modelBoy, glm::radians(rotBoy), glm::vec3(0.0f, 0.0f, 1.0f)); // Rotación local
+        // 2. Matriz de modelo global con orden CORRECTO: Traslación -> Rotación -> Escala
+        glm::mat4 globalModel = glm::mat4(1.0f);
+        globalModel = glm::translate(globalModel, boyGlobalPosition);       // 1. Traslación
+        globalModel = glm::rotate(globalModel, glm::radians(boyGlobalRotation), // 2. Rotación
+            boyGlobalRotationAxis);
+        globalModel = glm::scale(globalModel, boyGlobalScale);              // 3. Escala
 
-        // 4. Dibujar el cuerpo principal (todas las partes heredarán las transformaciones globales)
+        // 3. Matriz del cuerpo principal (hereda transformaciones globales)
+        glm::mat4 modelBoy = globalModel;
+        modelBoy = glm::translate(modelBoy, glm::vec3(boyPosX, boyPosY, boyPosZ)); // Pos local
+        modelBoy = glm::rotate(modelBoy, glm::radians(rotBoy), glm::vec3(0.0f, 0.0f, 1.0f)); // Rot local
+
+        // 4. Dibujar cuerpo principal
         glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(modelBoy));
         body.Draw(shader);
 
-        // 5. Partes del cuerpo (todas comienzan desde modelBoy que ya incluye transformaciones globales)
+        // 5. Partes del cuerpo (todas heredan transformaciones globales a través de modelBoy)
 
         // Bíceps Izquierdo
         glm::mat4 modelBicepIzq = modelBoy;
@@ -1065,6 +1077,7 @@ int main() {
         modelPantDer = glm::rotate(modelPantDer, glm::radians(pantDer), glm::vec3(1.0f, 0.0f, 0.0f));
         glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(modelPantDer));
         pantD.Draw(shader);
+
 
 
         // Lámpara
