@@ -24,6 +24,7 @@
     <ClInclude Include="Model.h" />
     <ClInclude Include="Shader.h" />
     <ClInclude Include="stb_image.h" />
+    <ClInclude Include="Texture.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Shader\lamp.frag" />
@@ -34,6 +35,8 @@
     <None Include="Shader\modelLoading.vs" />
     <None Include="Shader\shadow.frag" />
     <None Include="Shader\shadow.vs" />
+    <None Include="Shader\SkyBox.frag" />
+    <None Include="Shader\SkyBox.vs" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Proyecto.cpp" />

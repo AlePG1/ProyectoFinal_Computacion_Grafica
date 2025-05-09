@@ -10,6 +10,7 @@
 #include <glm/gtc/type_ptr.hpp>
 #include "SOIL2/SOIL2.h"
 #include "stb_image.h"
+#include "Texture.h"
 
 #include <Windows.h>
 #include <mmsystem.h>
@@ -309,7 +310,7 @@ int main() {
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
     glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
 
-    GLFWwindow* window = glfwCreateWindow(WIDTH, HEIGHT, "Proyecto", nullptr, nullptr);
+    GLFWwindow* window = glfwCreateWindow(WIDTH, HEIGHT, "Proyecto final Equipo 6", nullptr, nullptr);
     if (window == nullptr) {
         std::cout << "Failed to create GLFW window" << std::endl;
         glfwTerminate();
@@ -333,6 +334,8 @@ int main() {
     Shader shader("Shader/lighting.vs", "Shader/lighting.frag");
     Shader shadowShader("Shader/shadow.vs", "Shader/shadow.frag");
     Shader lampShader("Shader/lamp.vs", "Shader/lamp.frag");
+    //Cargar shader para skybox
+    Shader skyboxshader("Shader/SkyBox.vs", "Shader/SkyBox.frag");
 
     // Cargar modelos de la escena
     Model piso((char*)"Models/Proyecto/piso/piso.obj");
@@ -368,6 +371,100 @@ int main() {
     Model aireact((char*)"Models/Proyecto/AirOld/AireViejo.obj");
     Model airenew((char*)"Models/Proyecto/AirNew/AireNuevo.obj");
     Model pantalla((char*)"Models/Proyecto/Samsung8K/Pantalla.obj");
+
+    //Arreglos para Skybox
+    GLfloat skyboxVertices[] = {
+        // Positions
+        -1.0f,  1.0f, -1.0f,
+        -1.0f, -1.0f, -1.0f,
+        1.0f, -1.0f, -1.0f,
+        1.0f, -1.0f, -1.0f,
+        1.0f,  1.0f, -1.0f,
+        -1.0f,  1.0f, -1.0f,
+
+        -1.0f, -1.0f,  1.0f,
+        -1.0f, -1.0f, -1.0f,
+        -1.0f,  1.0f, -1.0f,
+        -1.0f,  1.0f, -1.0f,
+        -1.0f,  1.0f,  1.0f,
+        -1.0f, -1.0f,  1.0f,
+
+        1.0f, -1.0f, -1.0f,
+        1.0f, -1.0f,  1.0f,
+        1.0f,  1.0f,  1.0f,
+        1.0f,  1.0f,  1.0f,
+        1.0f,  1.0f, -1.0f,
+        1.0f, -1.0f, -1.0f,
+
+        -1.0f, -1.0f,  1.0f,
+        -1.0f,  1.0f,  1.0f,
+        1.0f,  1.0f,  1.0f,
+        1.0f,  1.0f,  1.0f,
+        1.0f, -1.0f,  1.0f,
+        -1.0f, -1.0f,  1.0f,
+
+        -1.0f,  1.0f, -1.0f,
+        1.0f,  1.0f, -1.0f,
+        1.0f,  1.0f,  1.0f,
+        1.0f,  1.0f,  1.0f,
+        -1.0f,  1.0f,  1.0f,
+        -1.0f,  1.0f, -1.0f,
+
+        -1.0f, -1.0f, -1.0f,
+        -1.0f, -1.0f,  1.0f,
+        1.0f, -1.0f, -1.0f,
+        1.0f, -1.0f, -1.0f,
+        -1.0f, -1.0f,  1.0f,
+        1.0f, -1.0f,  1.0f
+    };
+
+
+    GLuint indices[] =
+    {  // Note that we start from 0!
+        0,1,2,3,
+        4,5,6,7,
+        8,9,10,11,
+        12,13,14,15,
+        16,17,18,19,
+        20,21,22,23,
+        24,25,26,27,
+        28,29,30,31,
+        32,33,34,35
+    };
+
+    // First, set the container's VAO,VBO and EBO (for Skybox))
+    GLuint VBO, VAO, EBO;
+    glGenVertexArrays(1, &VAO);
+    glGenBuffers(1, &VBO);
+    glGenBuffers(1, &EBO);
+
+    glBindVertexArray(VAO);
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    
+
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+
+    //Skybox
+    GLuint skyboxVAO, skyboxVBO;
+    glGenVertexArrays(1, &skyboxVAO);
+    glGenBuffers(1, &skyboxVBO);
+    glBindVertexArray(skyboxVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, skyboxVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(skyboxVertices), &skyboxVertices, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid*)0);
+
+    //Load textures
+    vector<const GLchar*> faces;
+    faces.push_back("Skybox/right.jpg");
+    faces.push_back("Skybox/left.jpg");
+    faces.push_back("Skybox/top.jpg");
+    faces.push_back("Skybox/bottom.jpg");
+    faces.push_back("Skybox/back.jpg");
+    faces.push_back("Skybox/front.jpg");
+
+    GLuint cubemapTexture = TextureLoading::LoadCubemap(faces);
 
     // Configurar puestos de trabajo
     std::vector<Workstation> workstations = {
@@ -1035,10 +1132,29 @@ int main() {
 
         glBindVertexArray(0);
 
+        //Draw SkyBox (dentro del gameloop, después de todos los objetos)
+        glDepthFunc(GL_LEQUAL); // Función de profundidad para que el SkyBox no interfiera con los objetos.
+        skyboxshader.Use();
+        view = glm::mat4(glm::mat3(camera.GetViewMatrix())); // Se quita la traslación porque no queremos que se mueva el SkyBox, debe ser fija.
+        glUniformMatrix4fv(glGetUniformLocation(skyboxshader.Program, "view"), 1, GL_FALSE, glm::value_ptr(view));
+        glUniformMatrix4fv(glGetUniformLocation(skyboxshader.Program, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
+
+        glBindVertexArray(skyboxVAO);
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture); //Se configura textura en modo cubemap
+        glDrawArrays(GL_TRIANGLES, 0, 36); //Se dibuja la caja
+        glBindVertexArray(0);
+        glDepthFunc(GL_LESS); // Regresamos a la función de profundidad normal para los objetos.
+
         glfwSwapBuffers(window);
     }
 
-
+    //Fuera del game loop se limpian los buffers
+    glDeleteVertexArrays(1, &VAO);
+    glDeleteBuffers(1, &VBO);
+    glDeleteBuffers(1, &EBO);
+    glDeleteVertexArrays(1, &skyboxVAO);
+    glDeleteBuffers(1, &skyboxVAO);
 
     glfwTerminate();
     return 0;
