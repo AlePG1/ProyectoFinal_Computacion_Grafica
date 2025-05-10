@@ -10,6 +10,7 @@
 #include <glm/gtc/type_ptr.hpp>
 #include "SOIL2/SOIL2.h"
 #include "stb_image.h"
+#include "Texture.h"
 
 #include <Windows.h>
 #include <mmsystem.h>
@@ -32,20 +33,26 @@ bool firstMouse = true;
 GLfloat deltaTime = 0.0f;
 GLfloat lastFrame = 0.0f;
 
-// Variables para la animación de reducción gradual
-bool shrinkingWalls = false;  // Bandera para activar la animación
-float wallShrinkProgress = 1.0f;  // Progreso de la escala (1.0 = tamaño completo)
-float wallShrinkStep = 0.02f;  // Paso de reducción por iteración
-float wallShrinkDelay = 0.05f;  // Tiempo entre pasos (segundos)
-float wallShrinkTimer = 0.0f;  // Temporizador para controlar el tiempo
-
-
 bool showComputer = false; // Variable para controlar la visibilidad
 
 // Variables para la animación
 float globalAnimationTime = -1.0f;
 bool animationPlaying = false;
 float animationSpeed = 2.0f;
+
+// Variables para la animación de restauración gradual
+bool restoringWalls = false;  // Bandera para activar la restauración
+float wallRestoreProgress = 0.0f;  // Progreso de la restauración (0.0 = completamente reducido)
+float wallRestoreStep = 0.02f;  // Paso de restauración por iteración
+float wallRestoreTimer = 0.0f;  // Temporizador para controlar el tiempo
+
+
+// Variables para la animación de reducción gradual
+bool shrinkingWalls = false;  // Bandera para activar la animación
+float wallShrinkProgress = 1.0f;  // Progreso de la escala (1.0 = tamaño completo)
+float wallShrinkStep = 0.02f;  // Paso de reducción por iteración
+float wallShrinkDelay = 0.05f;  // Tiempo entre pasos (segundos)
+float wallShrinkTimer = 0.0f;  // Temporizador para controlar el tiempo
 
 bool change = false;
 float rotBall = 0;
@@ -317,7 +324,7 @@ int main() {
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
     glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
 
-    GLFWwindow* window = glfwCreateWindow(WIDTH, HEIGHT, "Proyecto", nullptr, nullptr);
+    GLFWwindow* window = glfwCreateWindow(WIDTH, HEIGHT, "Proyecto final Equipo 6", nullptr, nullptr);
     if (window == nullptr) {
         std::cout << "Failed to create GLFW window" << std::endl;
         glfwTerminate();
@@ -341,6 +348,8 @@ int main() {
     Shader shader("Shader/lighting.vs", "Shader/lighting.frag");
     Shader shadowShader("Shader/shadow.vs", "Shader/shadow.frag");
     Shader lampShader("Shader/lamp.vs", "Shader/lamp.frag");
+    //Cargar shader para skybox
+    Shader skyboxshader("Shader/SkyBox.vs", "Shader/SkyBox.frag");
 
     // Cargar modelos de la escena
     Model piso((char*)"Models/Proyecto/piso/piso.obj");
@@ -376,6 +385,100 @@ int main() {
     Model aireact((char*)"Models/Proyecto/AirOld/AireViejo.obj");
     Model airenew((char*)"Models/Proyecto/AirNew/AireNuevo.obj");
     Model pantalla((char*)"Models/Proyecto/Samsung8K/Pantalla.obj");
+
+    //Arreglos para Skybox
+    GLfloat skyboxVertices[] = {
+        // Positions
+        -1.0f,  1.0f, -1.0f,
+        -1.0f, -1.0f, -1.0f,
+        1.0f, -1.0f, -1.0f,
+        1.0f, -1.0f, -1.0f,
+        1.0f,  1.0f, -1.0f,
+        -1.0f,  1.0f, -1.0f,
+
+        -1.0f, -1.0f,  1.0f,
+        -1.0f, -1.0f, -1.0f,
+        -1.0f,  1.0f, -1.0f,
+        -1.0f,  1.0f, -1.0f,
+        -1.0f,  1.0f,  1.0f,
+        -1.0f, -1.0f,  1.0f,
+
+        1.0f, -1.0f, -1.0f,
+        1.0f, -1.0f,  1.0f,
+        1.0f,  1.0f,  1.0f,
+        1.0f,  1.0f,  1.0f,
+        1.0f,  1.0f, -1.0f,
+        1.0f, -1.0f, -1.0f,
+
+        -1.0f, -1.0f,  1.0f,
+        -1.0f,  1.0f,  1.0f,
+        1.0f,  1.0f,  1.0f,
+        1.0f,  1.0f,  1.0f,
+        1.0f, -1.0f,  1.0f,
+        -1.0f, -1.0f,  1.0f,
+
+        -1.0f,  1.0f, -1.0f,
+        1.0f,  1.0f, -1.0f,
+        1.0f,  1.0f,  1.0f,
+        1.0f,  1.0f,  1.0f,
+        -1.0f,  1.0f,  1.0f,
+        -1.0f,  1.0f, -1.0f,
+
+        -1.0f, -1.0f, -1.0f,
+        -1.0f, -1.0f,  1.0f,
+        1.0f, -1.0f, -1.0f,
+        1.0f, -1.0f, -1.0f,
+        -1.0f, -1.0f,  1.0f,
+        1.0f, -1.0f,  1.0f
+    };
+
+
+    GLuint indices[] =
+    {  // Note that we start from 0!
+        0,1,2,3,
+        4,5,6,7,
+        8,9,10,11,
+        12,13,14,15,
+        16,17,18,19,
+        20,21,22,23,
+        24,25,26,27,
+        28,29,30,31,
+        32,33,34,35
+    };
+
+    // First, set the container's VAO,VBO and EBO (for Skybox))
+    GLuint VBO, VAO, EBO;
+    glGenVertexArrays(1, &VAO);
+    glGenBuffers(1, &VBO);
+    glGenBuffers(1, &EBO);
+
+    glBindVertexArray(VAO);
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    
+
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+
+    //Skybox
+    GLuint skyboxVAO, skyboxVBO;
+    glGenVertexArrays(1, &skyboxVAO);
+    glGenBuffers(1, &skyboxVBO);
+    glBindVertexArray(skyboxVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, skyboxVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(skyboxVertices), &skyboxVertices, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid*)0);
+
+    //Load textures
+    vector<const GLchar*> faces;
+    faces.push_back("Skybox/right.jpg");
+    faces.push_back("Skybox/left.jpg");
+    faces.push_back("Skybox/top.jpg");
+    faces.push_back("Skybox/bottom.jpg");
+    faces.push_back("Skybox/back.jpg");
+    faces.push_back("Skybox/front.jpg");
+
+    GLuint cubemapTexture = TextureLoading::LoadCubemap(faces);
 
     // Configurar puestos de trabajo
     std::vector<Workstation> workstations = {
@@ -550,13 +653,15 @@ int main() {
         {glm::vec3(8.5f,  7.0f,   36.0f), 90.0f, glm::vec3(80.2f,  9.2f,  3.0f)},  //Pared derecha 4
         {glm::vec3(1.0f,  12.5f, -60.3f),  0.0f, glm::vec3(63.0f,  20.0f,  3.0f)},    //Pared frontal
         {glm::vec3(5.5f,  12.5f,  52.0f),  0.0f, glm::vec3(50.3f,  20.0f,  3.0f)}     //Pared trasera
+        
     };
-
+std::vector<glm::vec3> originalWallScalesBIG; // Escalas originales de las paredes
     // Configuración de ventanas
     std::vector<ModelInstance> windows = {
         {glm::vec3(33.4f, 16.5f, -33.0f), 0.0f, glm::vec3(20.7f, 10.7f, 30.5f)},
         {glm::vec3(33.4f, 16.5f,  8.5f), 0.0f, glm::vec3(20.7f, 10.7f, 45.7f)}
     };
+    std::vector<glm::vec3> originalWindowsScalesBIG; // Escalas originales de las ventanas
 
     // Configuración de mesas adicionales (solo una definición)
     ModelInstance teacherDesk = { glm::vec3(45.0f, 6.4f, -20.0f), 90.0f, glm::vec3(10.0f,10.0f,18.0f) };
@@ -626,17 +731,23 @@ int main() {
             keys[GLFW_KEY_R] = false;
         }
 
-        //// Tecla para reducir la escala de las paredes
         std::vector<glm::vec3> originalWallScales;
-        //if (keys[GLFW_KEY_O]) {
-        //    for (auto& wall : walls) {
-        //        wall.scale = glm::vec3(0.0f); // Reducir la escala a 0
-        //    }
+        std::vector<glm::vec3> originalWindowsScales;
+        
+
             // Guardar la escala original de las paredes
         for (const auto& wall : walls) {
             originalWallScales.push_back(wall.scale);
         }
-        //}
+        for (const auto& wall : walls) {
+            originalWallScalesBIG.push_back(wall.scale);
+        }
+        for (const auto& wall : windows) {
+            originalWindowsScales.push_back(wall.scale);
+        }
+        for (const auto& wall : windows) {
+            originalWindowsScalesBIG.push_back(wall.scale);
+        }
 
         if (shrinkingWalls) {
             wallShrinkTimer += deltaTime;
@@ -655,8 +766,36 @@ int main() {
                 for (size_t i = 0; i < walls.size(); ++i) {
                     walls[i].scale = glm::mix(originalWallScales[i], glm::vec3(0.0f), 1.0f - wallShrinkProgress);
                 }
+                for (size_t i = 0; i < windows.size(); ++i) {
+                    windows[i].scale = glm::mix(originalWindowsScales[i], glm::vec3(0.0f), 1.0f - wallShrinkProgress);
+                }
             }
         }
+
+        // Animación de restauración de paredes
+        if (restoringWalls) {
+            wallRestoreTimer += deltaTime;
+
+            if (wallRestoreTimer >= wallShrinkDelay) {
+                wallRestoreProgress += wallRestoreStep;
+                wallRestoreTimer = 0.0f;
+
+                // Limitar el progreso a 1.0
+                if (wallRestoreProgress >= 1.0f) {
+                    wallRestoreProgress = 1.0f;
+                    restoringWalls = false;  // Detener la animación
+                }
+
+                // Interpolar la escala de las paredes desde 0 hasta la escala original
+                for (size_t i = 0; i < walls.size(); ++i) {
+                    walls[i].scale = glm::mix(glm::vec3(0.0f), originalWallScalesBIG[i], wallRestoreProgress);
+                }
+                for (size_t i = 0; i < windows.size(); ++i) {
+                    windows[i].scale = glm::mix(glm::vec3(0.0f), originalWindowsScalesBIG[i], wallRestoreProgress);
+                }
+            }
+        }
+
 
         // Actualizar animaciones
         UpdateAnimations(globalAnimationTime);
@@ -817,7 +956,7 @@ int main() {
         glm::mat4 nave(1);
         glm::mat4 aire(1);
         glm::mat4 proyectorview(1);
-
+        
         // Renderizar ventanas
         for (const auto& wi : windows) {
             RenderInstance(shader, ventanas, wi);
@@ -852,6 +991,7 @@ int main() {
         for (const auto& w : walls) {
             RenderInstance(shader, pared, w);
         }
+
 
         if (change == false) {
             // Pizarrón
@@ -946,9 +1086,6 @@ int main() {
             Rayo.Draw(shader);
         }
 
-
-
-
         //RenderComputer(shader, globalAnimationTime);
         for (const auto& ci : computerInstances) {
             // 1) monta la matriz padre para ESTA instancia
@@ -1034,10 +1171,10 @@ int main() {
         }
         // En el bucle de renderizado, modificar la parte donde se renderizan las workstations:
         for (const auto& ws : workstations) {
-
+        
             RenderInstance(shader, cpu, ws.cpu1, true); // Marcar como CPU
             RenderInstance(shader, cpu, ws.cpu2, true); // Marcar como CPU
-
+           
         }
 
         // Also draw the lamp object, again binding the appropriate shader
@@ -1070,10 +1207,29 @@ int main() {
 
         glBindVertexArray(0);
 
+        //Draw SkyBox (dentro del gameloop, después de todos los objetos)
+        glDepthFunc(GL_LEQUAL); // Función de profundidad para que el SkyBox no interfiera con los objetos.
+        skyboxshader.Use();
+        view = glm::mat4(glm::mat3(camera.GetViewMatrix())); // Se quita la traslación porque no queremos que se mueva el SkyBox, debe ser fija.
+        glUniformMatrix4fv(glGetUniformLocation(skyboxshader.Program, "view"), 1, GL_FALSE, glm::value_ptr(view));
+        glUniformMatrix4fv(glGetUniformLocation(skyboxshader.Program, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
+
+        glBindVertexArray(skyboxVAO);
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture); //Se configura textura en modo cubemap
+        glDrawArrays(GL_TRIANGLES, 0, 36); //Se dibuja la caja
+        glBindVertexArray(0);
+        glDepthFunc(GL_LESS); // Regresamos a la función de profundidad normal para los objetos.
+
         glfwSwapBuffers(window);
     }
 
-
+    //Fuera del game loop se limpian los buffers
+    glDeleteVertexArrays(1, &VAO);
+    glDeleteBuffers(1, &VBO);
+    glDeleteBuffers(1, &EBO);
+    glDeleteVertexArrays(1, &skyboxVAO);
+    glDeleteBuffers(1, &skyboxVAO);
 
     glfwTerminate();
     return 0;
@@ -1107,24 +1263,31 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mode
 
     }
     if (keys[GLFW_KEY_R] && action == GLFW_PRESS) {
-        // Solo activa animación de ensamblaje (componentes)
-        if (!animationPlaying) {
-            showComputer = true;
-            globalAnimationTime = -1.0f;
-            animationPlaying = true;
-            // Reinicia componentes (no CPUs)
-            for (auto& comp : components) {
-                comp.isAnimating = false;
-                comp.hasAnimated = false;
+            // Solo activa animación de ensamblaje (componentes)
+            if (!animationPlaying) {
+                showComputer = true;
+                globalAnimationTime = -1.0f;
+                animationPlaying = true;
+                // Reinicia componentes (no CPUs)
+                for (auto& comp : components) {
+                    comp.isAnimating = false;
+                    comp.hasAnimated = false;
+                }
             }
         }
-    }
 
     if (key == GLFW_KEY_O && action == GLFW_PRESS) {
         if (!shrinkingWalls) {
             shrinkingWalls = true;
             wallShrinkProgress = 1.0f;  // Reiniciar el progreso
             wallShrinkTimer = 0.0f;     // Reiniciar el temporizador
+        }
+    }
+    if (key == GLFW_KEY_P && action == GLFW_PRESS) {
+        if (!restoringWalls) {
+            restoringWalls = true;
+            wallRestoreProgress = 0.0f;  // Reiniciar el progreso
+            wallRestoreTimer = 0.0f;     // Reiniciar el temporizador
         }
     }
 
@@ -1181,8 +1344,6 @@ void Animation() {
             }
         }
     }
-
-
 }
 
 void MouseCallback(GLFWwindow* window, double xPos, double yPos) {
