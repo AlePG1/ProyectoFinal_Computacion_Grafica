@@ -170,8 +170,8 @@ float boyPosX = -25.768f;
 float boyPosY = 8.2f;
 float boyPosZ = 60.331f;
 
-#define MAX_FRAMES_BOY 100
-int i_max_steps = 10;
+#define MAX_FRAMES_BOY 400
+int i_max_steps = 5;
 int i_curr_steps_boy = 0;
 
 typedef struct _frameBoy {
@@ -274,58 +274,127 @@ void setupBoyWalkAnimation() {
     bicepIzq = 0.0f;
     bicepDer = 0.0f;
 
-    // Primera parte: Caminar hacia adelante (50 keyframes)
+    // 1. Caminar hacia adelante (25 pasos, 50 keyframes)
     for (int i = 0; i < 50; i++) {
-        // Avanzar posición en Z cada 2 keyframes (hacia -Z)
-        if (i % 2 == 0) {
-            boyPosZ -= 1.0f;
-        }
+        if (i % 2 == 0) boyPosZ -= 1.0f;
 
-        // Alternar movimiento de piernas
         if (i % 2 == 0) {
-            piernaDer = -25.0f;
-            piernaIzq = 25.0f;
-            pantDer = 25.0f;
-            pantIzq = -25.0f;
-            brazoIzq = -30.0f;
-            brazoDer = 30.0f;
+            piernaDer = -25.0f; piernaIzq = 25.0f;
+            pantDer = 25.0f; pantIzq = -25.0f;
+            brazoIzq = -30.0f; brazoDer = 30.0f;
         }
         else {
-            piernaDer = 25.0f;
-            piernaIzq = -25.0f;
-            pantDer = -25.0f;
-            pantIzq = 25.0f;
-            brazoIzq = 30.0f;
-            brazoDer = -30.0f;
+            piernaDer = 25.0f; piernaIzq = -25.0f;
+            pantDer = -25.0f; pantIzq = 25.0f;
+            brazoIzq = 30.0f; brazoDer = -30.0f;
         }
+        saveFrameBoy();
+    }
+
+    // 2. Giro a la derecha (90°) con movimiento de pies realista (30 keyframes)
+    for (int i = 0; i < 30; i++) {
+        rotBoy -= 3.0f; // Giro más suave
+
+        // Movimiento de pies durante el giro
+        if (i < 15) {
+            // Fase 1: Transferencia de peso al pie izquierdo
+            piernaDer = -20.0f - (i * 2.0f); // Pie derecho gira hacia atrás
+            piernaIzq = 10.0f + (i * 1.5f);  // Pie izquierdo se levanta
+            pantDer = 10.0f + (i * 1.0f);    // Rotación externa
+            pantIzq = -5.0f - (i * 0.5f);    // Rotación interna
+        }
+        else {
+            // Fase 2: Transferencia de peso al pie derecho
+            piernaDer = -50.0f + ((i - 15) * 3.0f);
+            piernaIzq = 32.5f - ((i - 15) * 2.5f);
+            pantDer = 25.0f - ((i - 15) * 1.5f);
+            pantIzq = -12.5f + ((i - 15) * 1.0f);
+        }
+
+        // Brazos balanceándose naturalmente
+        float armSwing = sin(i * 0.2f) * 20.0f;
+        brazoIzq = -15.0f + armSwing;
+        brazoDer = 15.0f - armSwing;
 
         saveFrameBoy();
     }
 
-    // Segunda parte: Giro a la derecha (90 grados, 10 keyframes)
+    // 3. Caminar hacia la derecha (30 pasos, 60 keyframes)
+    for (int i = 0; i < 60; i++) {
+        if (i % 2 == 0) boyPosX += 1.0f;
+
+        if (i % 2 == 0) {
+            piernaDer = -25.0f; piernaIzq = 25.0f;
+            pantDer = 25.0f; pantIzq = -25.0f;
+            brazoIzq = -30.0f; brazoDer = 30.0f;
+        }
+        else {
+            piernaDer = 25.0f; piernaIzq = -25.0f;
+            pantDer = -25.0f; pantIzq = 25.0f;
+            brazoIzq = 30.0f; brazoDer = -30.0f;
+        }
+        saveFrameBoy();
+    }
+
+    // 4. Giro al frente (90°) con movimiento de pies (30 keyframes)
+    for (int i = 0; i < 30; i++) {
+        rotBoy += 3.0f;
+
+        if (i < 15) {
+            piernaIzq = -20.0f - (i * 2.0f);
+            piernaDer = 10.0f + (i * 1.5f);
+            pantIzq = 10.0f + (i * 1.0f);
+            pantDer = -5.0f - (i * 0.5f);
+        }
+        else {
+            piernaIzq = -50.0f + ((i - 15) * 3.0f);
+            piernaDer = 32.5f - ((i - 15) * 2.5f);
+            pantIzq = 25.0f - ((i - 15) * 1.5f);
+            pantDer = -12.5f + ((i - 15) * 1.0f);
+        }
+
+        float armSwing = sin(i * 0.2f) * 20.0f;
+        brazoDer = -15.0f + armSwing;
+        brazoIzq = 15.0f - armSwing;
+
+        saveFrameBoy();
+    }
+
+    // 5. Caminar hacia adelante (20 pasos, 40 keyframes)
+    for (int i = 0; i < 40; i++) {
+        if (i % 2 == 0) boyPosZ -= 1.0f;
+
+        if (i % 2 == 0) {
+            piernaDer = -25.0f; piernaIzq = 25.0f;
+            pantDer = 25.0f; pantIzq = -25.0f;
+            brazoIzq = -30.0f; brazoDer = 30.0f;
+        }
+        else {
+            piernaDer = 25.0f; piernaIzq = -25.0f;
+            pantDer = -25.0f; pantIzq = 25.0f;
+            brazoIzq = 30.0f; brazoDer = -30.0f;
+        }
+        saveFrameBoy();
+    }
+
+    // 6. Giro de vuelta al frente (90 grados, 10 keyframes)
     for (int i = 0; i < 10; i++) {
-        rotBoy -= 9.0f; // Giro gradual a la derecha (reducir ángulo)
-
-        // Posición se mantiene durante el giro
-        boyPosX = boyPosX;
-        boyPosZ = boyPosZ;
-
-        // Piernas en posición neutral durante el giro
+        rotBoy += 9.0f; // Giro gradual de vuelta al frente
+        // Posición neutral durante el giro
         piernaDer = 0.0f;
         piernaIzq = 0.0f;
         pantDer = 0.0f;
         pantIzq = 0.0f;
         brazoIzq = 0.0f;
         brazoDer = 0.0f;
-
         saveFrameBoy();
     }
 
-    // Tercera parte: Caminar hacia la derecha (10 pasos, 20 keyframes)
-    for (int i = 0; i < 50; i++) {
-        // Avanzar posición en X cada 2 keyframes (hacia +X)
+    // 7. Caminar hacia la derecha (10 pasos, 20 keyframes)
+    for (int i = 0; i < 15; i++) {
+        // Avanzar posición en X cada 2 keyframes
         if (i % 2 == 0) {
-            boyPosX += 1.0f;
+            boyPosX -= 1.0f;
         }
 
         // Alternar movimiento de piernas
@@ -345,7 +414,6 @@ void setupBoyWalkAnimation() {
             brazoIzq = 30.0f;
             brazoDer = -30.0f;
         }
-
         saveFrameBoy();
     }
 
