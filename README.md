@@ -1,2 +1,2 @@
-# Curso_Computacion_Grafica
- Curso básico de Computación Gráfica Gpo06 2025-2
+# ProyectoFinal_Computacion_Grafica
+Proyecto de Final de Computación Gráfica Laboratorio
